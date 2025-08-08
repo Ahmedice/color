@@ -40,6 +40,20 @@ except Exception as e:
     }
 
 st.title("محلل NanoDrop")
+
+# تهيئة session_state للقيم الافتراضية عند أول تحميل
+if "protocol_choice" not in st.session_state:
+    st.session_state.protocol_choice = "PCR"
+    st.session_state.target_conc = protocols["PCR"]["target_conc"]
+    st.session_state.final_vol = protocols["PCR"]["final_vol"]
+    st.session_state.factor = 50
+
+# دالة لتحديث القيم عند تغيير البروتوكول
+def on_protocol_change():
+    st.session_state.target_conc = protocols[st.session_state.protocol_choice]["target_conc"]
+    st.session_state.final_vol = protocols[st.session_state.protocol_choice]["final_vol"]
+    st.session_state.factor = 50
+
 st.markdown("<style>body {direction: rtl;}</style>", unsafe_allow_html=True)
 st.sidebar.header("شرح التطبيق")
 st.sidebar.markdown(
@@ -78,16 +92,19 @@ tab1, tab2 = st.tabs(["عينة واحدة", "ملف CSV كامل"])
 # -------------------------
 with tab1:
     st.header("تحليل عينة واحدة")
+    col1_test, col2_test, col3_test = st.columns([1, 1, 1])
+    with col1_test:
+        sample_id = st.text_input("Sample ID", value="")
+    with col2_test:
+        sample_type = st.selectbox("Sample Type", options=["DNA", "RNA", "Protein"])
+    with col3_test:
+        protocol_choice = st.selectbox(
+            "Protocol",
+            options=list(protocols.keys()),
+            key="protocol_choice",
+            on_change=on_protocol_change
+        )
     with st.form("single_sample_form"):
-        st.subheader("نوع الاختبار")
-        col1_test, col2_test, col3_test = st.columns([1, 1, 1])
-        with col1_test:
-            sample_id = st.text_input("Sample ID", value="")
-        with col2_test:
-            sample_type = st.selectbox("Sample Type", options=["DNA", "RNA", "Protein"])
-        with col3_test:
-            protocol_choice = st.selectbox("Protocol", options=list(protocols.keys()))
-
         st.subheader("القرائات")
         col1_readings, col2_readings, col3_readings = st.columns([1, 1, 1])
         with col1_readings:
@@ -105,15 +122,11 @@ with tab1:
         with col1_dilution:
             factor_input = st.text_input("Factor", value="", help="A260 لحساب التركيز.")
         with col2_dilution:
-            final_vol_input = st.text_input("Final Vol (µl)", value="")
-        with col2_dilution:
-            final_vol_input = st.text_input("Final Vol (µl)", value="", help=f"القيمة الافتراضية حسب البروتوكول: {protocols.get(protocol_choice, {}).get('final_vol', 20)} µl")
+            final_vol_input = st.text_input("Final Vol (µl)", value=str(st.session_state.final_vol), key="final_vol_input")
         with col3_dilution:
-            target_conc_input = st.text_input("Target Conc", value="", help=f"القيمة الافتراضية حسب البروتوكول: {protocols.get(protocol_choice, {}).get('target_conc', 10)} ng/µl")
-
-        # load defaults from protocol
-        default_final_vol = protocols.get(protocol_choice, {}).get("final_vol", 20)
-        default_target_conc = protocols.get(protocol_choice, {}).get("target_conc", 10)
+            target_conc_input = st.text_input("Target Conc", value=str(st.session_state.target_conc), key="target_conc_input")
+        with col1_dilution:
+            factor_input = st.text_input("Factor", value=str(st.session_state.factor), help="A260 لحساب التركيز.", key="factor_input")
 
         submitted = st.form_submit_button("حساب")
 
@@ -167,7 +180,8 @@ with tab1:
                 st.error("لا يمكن حساب V1/V2 بسبب تركيز غير صالح.")
         with st.expander("تفاصيل الإدخال"):
             st.write({
-                "Sample ID": sample_id or "(لم يُعطَ)",
+                "Sample ID": sample_id,
+                "Sample Type": sample_type,
                 "A260": a260_input,
                 "A280": a280_input,
                 "260/230 Ratio": ratio_260_230_input or "(مفقود)",
