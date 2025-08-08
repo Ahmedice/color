@@ -1,0 +1,5 @@
+{
+  "PCR": {"target_conc": 10, "final_vol": 20},
+  "qPCR": {"target_conc": 5, "final_vol": 10},
+  "Sanger": {"target_conc": 15, "final_vol": 12}
+}

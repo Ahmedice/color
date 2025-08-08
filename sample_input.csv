@@ -1,0 +1,4 @@
+Sample ID,Sample Type,A260 (Abs),A280 (Abs),A230 (Abs)
+DNA_1,DNA,0.12,0.07,0.06
+DNA_2,DNA,0.05,0.03,
+PROT_1,Protein,0.02,0.03,0.01
