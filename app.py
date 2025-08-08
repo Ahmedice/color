@@ -54,6 +54,14 @@ def on_protocol_change():
     st.session_state.final_vol = protocols[st.session_state.protocol_choice]["final_vol"]
     st.session_state.factor = 50
 
+TABLE_STYLE = """
+<style>
+.streamlit-table {
+    overflow: auto;
+}
+</style>
+"""
+st.markdown(TABLE_STYLE, unsafe_allow_html=True)
 st.markdown("<style>body {direction: rtl;}</style>", unsafe_allow_html=True)
 st.sidebar.header("شرح التطبيق")
 st.sidebar.markdown(
@@ -237,7 +245,7 @@ PROT_1,Protein,0.02,0.03,0.01""", language="csv")
                 st.warning("Column 'ratio_260_230' not found in CSV file. Please include this column for accurate results.")
                 result_df = process_dataframe(df, detected, protocol_settings_batch, default_factor_batch)
             st.subheader("النتائج")
-            st.dataframe(result_df, use_container_width=True)
+            st.table(result_df)
 
             # Download button
             csv_bytes = result_df.to_csv(index=False).encode("utf-8")
@@ -253,7 +261,7 @@ PROT_1,Protein,0.02,0.03,0.01"""
             df_sample = pd.read_csv(io.StringIO(sample_csv))
             detected = map_columns(df_sample.columns)
             result_df = process_dataframe(df_sample, detected, protocol_settings_batch, default_factor_batch)
-            st.dataframe(result_df, use_container_width=True)
+            st.table(result_df)
             csv_bytes = result_df.to_csv(index=False).encode("utf-8")
             st.download_button(label="تحميل نتائج المثال كـ CSV", data=csv_bytes, file_name="nanodrop_example_results.csv", mime="text/csv")
 
