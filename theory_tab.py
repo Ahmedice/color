@@ -3,6 +3,10 @@ import plotly.graph_objects as go
 import numpy as np
 from scipy.interpolate import interp1d
 
+import plotly.graph_objects as go
+import numpy as np
+from scipy.interpolate import interp1d
+from utils import assess_purity
 class TheoryTab:
     def __init__(self):
         self.render()
@@ -64,11 +68,82 @@ class TheoryTab:
             ratio_260_230 = dna_rna / salt if salt != 0 else 0
             concentration = dna_rna * factor
 
-            st.markdown(f"260/280: <span style='background-color: rgba(0, 0, 0, 0.1); padding: 2px;'>{ratio_260_280:.2f}</span>", unsafe_allow_html=True)
-            st.markdown(f"260/230: <span style='background-color: rgba(0, 0, 0, 0.1); padding: 2px;'>{ratio_260_230:.2f}</span>", unsafe_allow_html=True)
-            st.markdown(f"Factor: <span style='background-color: rgba(0, 0, 0, 0.1); padding: 2px;'>{factor:.2f}</span>", unsafe_allow_html=True)
-            st.markdown(f"التركيز: <span style='background-color: rgba(0, 0, 0, 0.1); padding: 2px;'>{concentration:.2f} ng/µL</span>", unsafe_allow_html=True)
+            # Purity Assessment
+            sample_type = "DNA"  # Default value
+            purity_verdict, purity_reco = assess_purity(ratio_260_280, ratio_260_230, sample_type)
 
+            col1_data, col2_data = st.columns(2)
+
+            with col1_data:
+                st.markdown(
+                    f"""
+                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
+                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
+                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{ratio_260_280:.2f}</span> :260/280
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                st.markdown(
+                    f"""
+                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
+                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
+                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{factor:.2f}</span> :Factor
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            col3_data, col4_data = st.columns(2)
+
+            with col3_data:
+                st.markdown(
+                    f"""
+                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
+                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
+                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{ratio_260_230:.2f}</span> :260/230
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            with col4_data:
+                st.markdown(
+                    f"""
+                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
+                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
+                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{concentration:.2f} ng/µL</span> :التركيز
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            col5_data, col6_data = st.columns(2)
+            with col5_data:
+                st.markdown(
+                    f"""
+                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
+                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
+                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{purity_verdict}</span> :النقاء
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            with col6_data:
+                st.markdown(
+                    f"""
+                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
+                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
+                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{purity_reco}</span> :التعليق
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
         # Sample data based on the image
         x = [230, 260, 280]
         y = [salt, dna_rna, protein]
@@ -108,3 +183,17 @@ class TheoryTab:
         # Display the plot in Streamlit
         with col2:
             st.plotly_chart(fig, key="updated_chart")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
