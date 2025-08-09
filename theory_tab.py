@@ -10,13 +10,54 @@ class TheoryTab:
     def render(self):
         st.header("Theory Tab Content")
 
-        # Display the image
-        st.image("The-graph-depicting-the-RNA-purity-measured-by-NanoDrop-1000-vs-52.png", caption="Typical nucleic acid spectrum (DOI: 10.1371/journal.pone.0291949)")
+        # Center the image
+        st.markdown(
+            """
+            <style>
+            .center {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                width: 50%;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        st.image("The-graph-depicting-the-RNA-purity-measured-by-NanoDrop-1000-vs-52.png", caption="Typical nucleic acid spectrum (DOI: 10.1371/journal.pone.0291949)", width=400, use_container_width=True, output_format='PNG', clamp=False)
 
-        # Add sliders for 230, 260, and 280 wavelengths
-        salt = st.slider("Salt", 0, 40, 18)
-        dna_rna = st.slider("DNA/RNA", 0, 40, 36)
-        protein = st.slider("Protein", 0, 40, 18)
+        # Add a horizontal line
+        st.markdown("---")
+
+        # Explanation
+        st.markdown("This tab demonstrates the relationship between absorbance values at different wavelengths (230nm, 260nm, 280nm) and the purity of a nucleic acid sample. Adjust the sliders to see how changes in these values affect the overall spectrum.")
+
+        # Create columns for sliders and chart
+        col1, col2 = st.columns([1, 2])
+
+        with col1:
+            st.markdown("#### Sliders")
+            st.markdown(
+                """
+                <style>
+                .stSlider > div > div > div > div {
+                    display: none;
+                }
+                .stSlider > div > div::before {
+                    content: attr(aria-valuenow);
+                    position: absolute;
+                    top: -20px;
+                    left: 0;
+                    font-size: 14px;
+                    color: #888;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+            salt = st.slider("Salt", 0, 40, 18)
+            dna_rna = st.slider("DNA/RNA", 0, 40, 36)
+            protein = st.slider("Protein", 0, 40, 18)
 
         # Sample data based on the image
         x = [230, 260, 280]
@@ -55,4 +96,5 @@ class TheoryTab:
         )
 
         # Display the plot in Streamlit
-        st.plotly_chart(fig, key="updated_chart")
+        with col2:
+            st.plotly_chart(fig, key="updated_chart")
