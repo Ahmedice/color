@@ -28,7 +28,8 @@ def process_single_sample(inputs: Dict[str, Any], protocol_settings: Dict[str, A
     concentration = compute_concentration_from_a260(a260, factor) if not math.isnan(a260) else np.nan
 
     # Ratios
-    r260_280, r260_230, ratio_note = calculate_ratios(a260, a280, ratio_260_230)
+    r260_280, r260_230 = calculate_ratios(inputs)
+    ratio_note = ""
 
     # Dilution
     v1, v2, dilution_note = calculate_dilution(concentration, target_conc, final_vol)

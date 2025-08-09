@@ -58,7 +58,7 @@ PROT_3,Protein,0.04,0.03,0.00""", language="csv")
 
         # عرض الجدول النهائي مع كل القيم المضافة
         st.subheader("النتائج")
-        st.dataframe(result_df)
+        st.dataframe(result_df.style.set_properties(**{'text-align': 'right', 'width': '300px'}))
 
         # عرض ملخصات تحذيرية للمستخدم (مثلاً عدد العينات التي بها تحذيرات نقاوة)
         warnings_count = result_df[result_df['Purity'] == 'تحذير'].shape[0]
@@ -90,6 +90,6 @@ PROT_3,Protein,0.04,0.03,0.00"""
             df_sample = pd.read_csv(io.StringIO(sample_csv))
             detected, _ = map_columns(df_sample.columns)
             result_df = process_dataframe(df_sample, detected, protocol_settings_batch, default_factor_batch)
-            st.dataframe(result_df)
+            st.dataframe(result_df.style.set_properties(**{'text-align': 'right', 'width': '300px'}))
             csv_bytes = result_df.to_csv(index=False).encode("utf-8")
             st.download_button(label="تحميل نتائج المثال كـ CSV", data=csv_bytes, file_name="nanodrop_example_results.csv", mime="text/csv")

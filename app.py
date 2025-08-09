@@ -156,9 +156,10 @@ with tab1:
         pass # do nothing
     
     if reset_button:
-        st.session_state.factor_input = str(50)
-        st.session_state.target_conc_input = str(protocols[st.session_state.protocol_choice]["target_conc"])
-        st.session_state.final_vol_input = str(protocols[st.session_state.protocol_choice]["final_vol"])
+        protocol = protocols[st.session_state.protocol_choice]
+        factor_input = str(50)
+        target_conc_input = str(protocol["target_conc"])
+        final_vol_input = str(protocol["final_vol"])
     elif submitted:
         # Convert inputs safely
         a260_val, note_a260 = safe_float(a260_input)
