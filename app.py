@@ -18,7 +18,8 @@ import math
 import pandas as pd
 import numpy as np
 import streamlit as st
-from utils import load_config, map_columns, safe_float, safe_ratio
+from utils import load_config, map_columns, safe_float
+from batch_processor import batch_processing_tab
 from single_sample import process_single_sample
 from dataframe_processor import process_dataframe
 
@@ -58,6 +59,18 @@ TABLE_STYLE = """
 <style>
 .streamlit-table {
     overflow: auto;
+}
+
+.stSlider > div > div > div > div {
+    display: none;
+}
+.stSlider > div > div::before {
+    content: attr(aria-valuenow);
+    position: absolute;
+    top: -20px;
+    left: 0;
+    font-size: 14px;
+    color: #888;
 }
 </style>
 """
@@ -128,7 +141,7 @@ with tab1:
         st.subheader("التخفيف")
         col1_dilution, col2_dilution, col3_dilution = st.columns([1, 1, 1])
         with col1_dilution:
-            factor_input = st.text_input("Factor", value="", help="A260 لحساب التركيز.")
+            pass
         with col2_dilution:
             final_vol_input = st.text_input("Final Vol (µl)", value=str(st.session_state.final_vol), key="final_vol_input")
         with col3_dilution:
@@ -136,9 +149,17 @@ with tab1:
         with col1_dilution:
             factor_input = st.text_input("Factor", value=str(st.session_state.factor), help="A260 لحساب التركيز.", key="factor_input")
 
+        reset_button = st.form_submit_button("إعادة تعيين")
         submitted = st.form_submit_button("حساب")
 
     if submitted:
+        pass # do nothing
+    
+    if reset_button:
+        st.session_state.factor_input = str(50)
+        st.session_state.target_conc_input = str(protocols[st.session_state.protocol_choice]["target_conc"])
+        st.session_state.final_vol_input = str(protocols[st.session_state.protocol_choice]["final_vol"])
+    elif submitted:
         # Convert inputs safely
         a260_val, note_a260 = safe_float(a260_input)
         a280_val, note_a280 = safe_float(a280_input)
@@ -203,76 +224,7 @@ with tab1:
 # TAB 2: CSV Batch
 # -------------------------
 with tab2:
-    st.header("تحميل ملف CSV للمعالجة الدفعيّة")
-    st.markdown("**ملاحظة:** تنسيق الأعمدة المفضّل: `Sample ID, Sample Type, A260 (Abs), A280 (Abs), A230 (Abs) (اختياري), Nucleic Acid (concentration)`")
-    with st.expander("مثال ملف CSV سريع (يمكن نسخه ولصقه):"):
-        st.code("""Sample ID,Sample Type,A260 (Abs),A280 (Abs),A230 (Abs)
-DNA_1,DNA,0.12,0.07,0.06
-RNA_1,RNA,0.08,0.04,
-PROT_1,Protein,0.02,0.03,0.01""", language="csv")
-
-    uploaded_file = st.file_uploader("اختر ملف CSV أو Excel لتحميله", type=["csv", "xlsx"])
-    protocol_choice_batch = st.selectbox("اختر البروتوكول لكل العينات", options=list(protocols.keys()), key="protocol_batch")
-    protocol_settings_batch = protocols.get(protocol_choice_batch, {"target_conc": 10, "final_vol": 20})
-    default_factor_batch = 50.0
-
-    if uploaded_file is not None:
-        try:
-            if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file)
-            else:
-                df = pd.read_excel(uploaded_file)
-        except Exception as e:
-            st.error("فشل قراءة ملف CSV: " + str(e))
-            df = None
-
-        if df is not None:
-            st.success(f"تم تحميل الملف (الصفوف: {len(df)})")
-            detected = map_columns(df.columns)
-            st.write("اكتشاف أعمدة (مطابقة تقريبية):")
-            st.json(detected)
-            
-            # look for 260/230 column
-            possible_260_230_cols = [col for col in df.columns if "260/230" in col.lower()]
-            if possible_260_230_cols:
-               ratio_col = possible_260_230_cols[0]
-               df['ratio_260_230'] = pd.to_numeric(df[ratio_col], errors='coerce')
-               detected["ratio_260_230"] = ratio_col
-            else:
-               df['ratio_260_230'] = np.nan
-               detected["ratio_260_230"] = None
-
-            if detected["ratio_260_230"] is not None:
-                result_df = process_dataframe(df, detected, protocol_settings_batch, default_factor_batch)
-            else:
-                st.warning("Column 'ratio_260_230' not found in CSV file. Please include this column for accurate results.")
-                result_df = process_dataframe(df, detected, protocol_settings_batch, default_factor_batch)
-            st.subheader("النتائج")
-            st.table(result_df)
-
-            # Download button
-            if uploaded_file.name.endswith('.csv'):
-                csv_bytes = result_df.to_csv(index=False).encode("utf-8")
-                st.download_button(label="تحميل النتائج كـ CSV", data=csv_bytes, file_name="nanodrop_results.csv", mime="text/csv")
-            else:
-                excel_bytes = io.BytesIO()
-                result_df.to_excel(excel_bytes, index=False)
-                excel_bytes = excel_bytes.getvalue()
-                st.download_button(label="تحميل النتائج كـ Excel", data=excel_bytes, file_name="nanodrop_results.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    else:
-        # Show sample CSV content and a quick button to load sample into app for demo
-        st.info("يمكنك تحميل ملف CSV أو استخدام المثال أسفل لتحميل سريع للاختبار.")
-        if st.button("تحميل المثال إلى المعالج"):
-            sample_csv = """Sample ID,Sample Type,A260 (Abs),A280 (Abs),A230 (Abs)
-DNA_1,DNA,0.12,0.07,0.06
-RNA_1,RNA,0.08,0.04,
-PROT_1,Protein,0.02,0.03,0.01"""
-            df_sample = pd.read_csv(io.StringIO(sample_csv)) # fallback to csv
-            detected = map_columns(df_sample.columns)
-            result_df = process_dataframe(df_sample, detected, protocol_settings_batch, default_factor_batch)
-            st.table(result_df)
-            csv_bytes = result_df.to_csv(index=False).encode("utf-8")
-            st.download_button(label="تحميل نتائج المثال كـ CSV", data=csv_bytes, file_name="nanodrop_example_results.csv", mime="text/csv")
+    batch_processing_tab(protocols)
 
 # -------------------------
 # Footer / Small Help

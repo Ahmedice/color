@@ -1,18 +1,13 @@
-# utils.py
 import json
-import math
-from typing import Dict, Tuple, Any
-
-import pandas as pd
 import numpy as np
-
+import pandas as pd
+from typing import Dict, Tuple, Any
 
 def load_config(path: str = "config.json") -> Dict[str, Dict[str, Any]]:
     """Load JSON config file with default protocols."""
     with open(path, "r", encoding="utf-8") as f:
         config = json.load(f)
     return config
-
 
 def map_columns(columns: pd.Index) -> Dict[str, str]:
     """Map various CSV header names to canonical names.
@@ -47,126 +42,114 @@ def map_columns(columns: pd.Index) -> Dict[str, str]:
                         break
                 if detected[canon]:
                     break
-    return detected
+    missing = [k for k, v in detected.items() if v is None]
+    return detected, missing
 
-
-def safe_float(x) -> Tuple[float, str]:
-    """Try to convert to float. Return (value, note)."""
-    if pd.isna(x):
-        return (np.nan, "missing")
+def safe_float(val):
     try:
-        val = float(x)
-        return (val, "")
-    except Exception:
-        return (np.nan, "non-numeric")
-
+        return float(val), ""
+    except:
+        return np.nan, "قيمة غير صالحة"
 
 def compute_concentration_from_a260(a260: float, factor: float) -> float:
     """Compute concentration from A260 and factor."""
     return a260 * factor
 
+def calculate_ratios(row):
+    # حساب 260/280
+    a260 = row.get("a260")
+    a280 = row.get("a280")
+    a230 = row.get("a230")
 
-def calculate_ratios(a260: float, a280: float, ratio_260_230: float = None) -> Tuple[float, float, str]:
-    """Calculate 260/280 and 260/230 ratios. Returns (r260_280, r260_230, note)."""
-    note = ""
-    # 260/280
-    try:
-        if a280 == 0 or math.isnan(a280):
-            r260_280 = np.nan
-            note += "A280 missing or zero; "
-        else:
-            r260_280 = a260 / a280
-    except Exception:
-        r260_280 = np.nan
-        note += "Error computing 260/280; "
+    ratio_260_280 = np.nan
+    if pd.notna(a260) and pd.notna(a280) and a280 != 0:
+        ratio_260_280 = a260 / a280
 
-    # 260/230
-    if ratio_260_230 is None or math.isnan(ratio_260_230):
-        r260_230 = a260 / 0.5 if not math.isnan(a260) else np.nan
-        note += "نسبة 260/230 مفقودة — استخدم افتراضي 0.5 لحسابها; "
-    else:
-        r260_230 = ratio_260_230
-    return (r260_280, r260_230, note.strip())
+    # حساب 260/230
+    ratio_260_230 = np.nan
+    if pd.notna(row.get("ratio_260_230")):
+        ratio_260_230 = row.get("ratio_260_230")
+    elif pd.notna(a260) and pd.notna(a230) and a230 != 0:
+        ratio_260_230 = a260 / a230
 
+    return ratio_260_280, ratio_260_230
 
-def calculate_dilution(concentration: float, target_conc: float, final_vol: float) -> Tuple[float, float, str]:
-    """Calculate V1 and V2 for dilution. Return rounded V1 and V2 and note if issues."""
-    note = ""
-    if concentration == 0 or math.isnan(concentration):
-        return (np.nan, np.nan, "zero concentration or invalid concentration")
-    # V1 = (C2 * V2) / C1  where V2 is final_vol
-    v1 = (target_conc * final_vol) / concentration
-    if v1 > final_vol:
-        note = "sample too dilute to reach target — need to concentrate or use more sample"
-    v2 = final_vol - v1
-    v1_rounded = round(v1, 2)
-    v2_rounded = round(v2, 2)
-    return (v1_rounded, v2_rounded, note)
+def compute_concentration(row, factor):
+    # إذا كانت قيمة التركيز موجودة ومستعملة لا تغيرها
+    if "Conc_ng_per_ul" in row and pd.notna(row["Conc_ng_per_ul"]):
+        return row["Conc_ng_per_ul"]
+    # غير ذلك حسب القانون: A260 * factor
+    a260 = row.get("a260")
+    if pd.notna(a260):
+        return a260 * factor
+    return np.nan
 
-
-def assess_purity(r260_280: float, r260_230: float, sample_type: str) -> Tuple[str, str]:
-    """Assess purity based on ratios and sample type.
-    Returns (verdict, recommendation) both in Arabic short texts.
+def assess_purity(sample_type, ratio_260_280, ratio_260_230):
     """
-    sample_type_up = (sample_type or "").strip().lower()
-    verdict = "حسن"  # OK by default
-    recommendations = []
+    تقييم نقاوة العينة بناء على نوع العينة و النسب.
+    القواعد مبنية على قواعد عامة:
+    DNA: 260/280 ~ 1.8, 260/230 ~ 2.0-2.2
+    RNA: 260/280 ~ 2.0, 260/230 ~ 2.0-2.2
+    Protein: 260/280 ~ 0.6-0.7 (عادي)
+    """
+    notes = []
+    verdict = "حسن"
 
-    # DNA rules
-    if sample_type_up == "dna":
-        if np.isnan(r260_280):
-            recommendations.append("غير ممكن حساب نسبة 260/280 بسبب نقص البيانات.")
-        else:
-            if r260_280 < 1.7:
-                recommendations.append("نسبة 260/280 منخفضة (<1.7): قد تشير إلى وجود بقايا بروتين أو ملوثات أخرى قد تؤثر على دقة القياس.")
-        if np.isnan(r260_230):
-            recommendations.append("غير ممكن حساب نسبة 260/230 بسبب نقص البيانات.")
-        else:
-            if r260_230 < 1.8:
-                recommendations.append("نسبة 260/230 منخفضة (<1.8): قد تشير إلى تلوث بالملح أو مواد حاملة تؤثر على نقاوة العينة.")
+    if sample_type == "DNA":
+        if ratio_260_280 is np.nan or ratio_260_280 < 1.7:
+            verdict = "تحذير"
+            notes.append("نسبة 260/280 منخفضة (<1.7): قد تشير إلى وجود بقايا بروتين أو ملوثات أخرى.")
+        elif ratio_260_280 > 2.0:
+            verdict = "تحذير"
+            notes.append("نسبة 260/280 مرتفعة (>2.0): قد تشير إلى تلوث بمواد أخرى.")
 
-    # RNA rules
-    elif sample_type_up == "rna":
-        if np.isnan(r260_280):
-            recommendations.append("غير ممكن حساب نسبة 260/280 بسبب نقص البيانات.")
-        else:
-            if r260_280 < 1.9:
-                recommendations.append("نسبة 260/280 منخفضة (<1.9): قد تشير إلى تحلل الحمض النووي أو تلوث في العينة.")
-        if np.isnan(r260_230):
-            recommendations.append("غير ممكن حساب نسبة 260/230 بسبب نقص البيانات.")
-        else:
-            if r260_230 < 1.8:
-                recommendations.append("نسبة 260/230 منخفضة (<1.8): قد تدل على وجود ملوثات مثل الأملاح أو المواد الحاملة.")
+        if ratio_260_230 is np.nan or ratio_260_230 < 1.8:
+            verdict = "تحذير"
+            notes.append("نسبة 260/230 منخفضة (<1.8): قد تشير إلى ملوثات عضوية أو أوساخ.")
 
-    # Protein rules
-    elif sample_type_up in ["protein", "prot"]:
-        if not np.isnan(r260_280) and r260_280 > 1.2:
-            recommendations.append("نسبة 260/280 مرتفعة (>1.2): مما قد يدل على وجود تلوث بالحمض النووي داخل العينة البروتينية.")
+    elif sample_type == "RNA":
+        if ratio_260_280 is np.nan or ratio_260_280 < 1.8:
+            verdict = "تحذير"
+            notes.append("نسبة 260/280 منخفضة (<1.8): قد تشير إلى تحلل الحمض النووي أو تلوث.")
+        elif ratio_260_280 > 2.2:
+            verdict = "تحذير"
+            notes.append("نسبة 260/280 مرتفعة (>2.2): قد تشير إلى تلوث.")
+        
+        if ratio_260_230 is np.nan or ratio_260_230 < 1.8:
+            verdict = "تحذير"
+            notes.append("نسبة 260/230 منخفضة (<1.8): قد تشير إلى ملوثات.")
 
-    # Unknown or other types
+    elif sample_type == "Protein":
+        if ratio_260_280 is np.nan or ratio_260_280 < 0.5:
+            verdict = "تحذير"
+            notes.append("نسبة 260/280 منخفضة (<0.5): قد تدل على نقاوة منخفضة للبروتين.")
+        elif ratio_260_280 > 0.8:
+            verdict = "تحذير"
+            notes.append("نسبة 260/280 مرتفعة (>0.8): قد تدل على تلوث بالحمض النووي.")
+        
+        # 260/230 ليس مقياسًا دقيقًا للبروتين عادة، يمكن تخطيه
+
+    # تحقق إذا كانت النسب مفقودة وأضف ملاحظات
+    if ratio_260_280 is np.nan:
+        notes.append("نسبة 260/280 غير متوفرة أو غير صالحة.")
+    if ratio_260_230 is np.nan:
+        notes.append("نسبة 260/230 غير متوفرة أو غير صالحة.")
+
+    purity_notes = "؛ ".join(notes)
+    return verdict, purity_notes
+
+def calculate_dilution(conc_sample, target_conc, final_vol):
+    note = ""
+    if conc_sample is None or conc_sample <= 0 or np.isnan(conc_sample):
+        return np.nan, np.nan, "تركيز العينة غير صالح للحساب"
+    
+    volume_sample = (target_conc * final_vol) / conc_sample
+    
+    if volume_sample > final_vol:
+        volume_sample = final_vol
+        volume_diluent = 0
+        note = "العينة مخففة جدًا للوصول للتركيز الهدف — يلزم تركيز العينة أو استخدام كمية أكبر."
     else:
-        if not np.isnan(r260_280) and r260_280 < 1.7:
-            recommendations.append("نسبة 260/280 منخفضة: قد تشير إلى وجود ملوثات أو شوائب في العينة.")
-        if not np.isnan(r260_230) and r260_230 < 1.8:
-            recommendations.append("نسبة 260/230 منخفضة: قد تعكس وجود ملوثات مثل الأملاح أو المواد الحاملة.")
-
-    # تحديد النتيجة النهائية
-    if recommendations:
-        verdict = "تحذير"
-    else:
-        verdict = "حسن"
-        recommendations = ["نقاوة العينة ضمن الحدود المقبولة والمعايير العلمية المتعارف عليها"]
-
-    recommendation_text = "؛ ".join(recommendations)
-    return (verdict, recommendation_text)
-
-
-def safe_ratio(x) -> Tuple[float, str]:
-   """Try to convert to float. Return (value, note)."""
-   if pd.isna(x):
-       return (np.nan, "missing")
-   try:
-       val = float(x)
-       return (val, "")
-   except Exception:
-       return (np.nan, "non-numeric")
+        volume_diluent = final_vol - volume_sample
+    
+    return round(volume_sample, 2), round(volume_diluent, 2), note

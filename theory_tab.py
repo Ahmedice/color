@@ -2,198 +2,77 @@ import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
 from scipy.interpolate import interp1d
-
-import plotly.graph_objects as go
-import numpy as np
-from scipy.interpolate import interp1d
 from utils import assess_purity
+
 class TheoryTab:
     def __init__(self):
         self.render()
 
     def render(self):
-        st.header("Theory Tab Content")
+        st.header("النظرية: تحليل نقاوة العينات حسب النوع")
 
-        # Center the image
-        st.markdown(
-            """
-            <style>
-            .center {
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-                width: 50%;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-        st.image("The-graph-depicting-the-RNA-purity-measured-by-NanoDrop-1000-vs-52.png", caption="Typical nucleic acid spectrum (DOI: 10.1371/journal.pone.0291949)", width=400, use_container_width=True, output_format='PNG', clamp=False)
+        # تقسيم الشاشة لعمودين: اليمين للسلايدر، اليسار للرسم البياني
+        col_sliders, col_chart = st.columns([1, 2])
 
-        # Add a horizontal line
-        st.markdown("---")
+        with col_sliders:
+            # اختيار نوع العينة
+            sample_type = st.selectbox("اختر نوع العينة", ["DNA", "RNA", "Protein"])
 
-        # Explanation
-        st.markdown("This tab demonstrates the relationship between absorbance values at different wavelengths (230nm, 260nm, 280nm) and the purity of a nucleic acid sample. Adjust the sliders to see how changes in these values affect the overall spectrum.")
+            # Sliders
+            salt = st.slider("Salt (230 nm Absorbance)", 0.0, 4.0, 0.5)
+            dna_rna = st.slider("DNA/RNA (260 nm Absorbance)", 0.0, 8.0, 3.0)
+            protein = st.slider("Protein (280 nm Absorbance)", 0.0, 4.0, 1.0)
+            factor = st.slider("Factor (معامل الحساب)", 0.0, 100.0, 50.0)
 
-        # Create columns for sliders and chart
-        col1, col2 = st.columns([1, 2])
-
-        with col1:
-            st.markdown("#### Sliders")
-            st.markdown(
-                """
-                <style>
-                .stSlider > div > div > div > div {
-                    display: none;
-                }
-                .stSlider > div > div::before {
-                    content: attr(aria-valuenow);
-                    position: absolute;
-                    top: -20px;
-                    left: 0;
-                    font-size: 14px;
-                    color: #888;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True,
-            )
-            salt = st.slider("Salt", 0.0, 2.0, 0.5)
-            dna_rna = st.slider("DNA/RNA", 0.0, 8.0, 3.0)
-            protein = st.slider("Protein", 0.0, 4.0, 1.0)
-            factor = st.slider("Factor", 0.0, 100.0, 50.0)
-
+            # حساب القيم
             ratio_260_280 = dna_rna / protein if protein != 0 else 0
             ratio_260_230 = dna_rna / salt if salt != 0 else 0
             concentration = dna_rna * factor
 
-            # Purity Assessment
-            sample_type = "DNA"  # Default value
             purity_verdict, purity_reco = assess_purity(ratio_260_280, ratio_260_230, sample_type)
 
-            col1_data, col2_data = st.columns(2)
+            # تنسيق القيم في صفين، كل صف به 3 أعمدة (نص عربي + القيمة)
+            st.markdown("---")
 
-            with col1_data:
-                st.markdown(
-                    f"""
-                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
-                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
-                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{ratio_260_280:.2f}</span> :260/280
-                        </span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                st.markdown(
-                    f"""
-                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
-                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
-                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{factor:.2f}</span> :Factor
-                        </span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+            # الصف الأول: نوع العينة، نسبة 260/280، نسبة 260/230
+            row1_col1, row1_col2, row1_col3 = st.columns(3)
+            row1_col1.markdown(f"**نوع العينة:** {sample_type}")
+            row1_col2.markdown(f"**نسبة 260/280:** {ratio_260_280:.2f}")
+            row1_col3.markdown(f"**نسبة 260/230:** {ratio_260_230:.2f}")
 
-            col3_data, col4_data = st.columns(2)
+            # الصف الثاني: Factor، التركيز، النقاء (تحذير مع أيقونة)
+            row2_col1, row2_col2, row2_col3 = st.columns(3)
+            row2_col1.markdown(f"**Factor:** {factor:.2f}")
+            row2_col2.markdown(f"**التركيز (ng/µL):** {concentration:.2f}")
+            row2_col3.markdown(f"**النقاء:** ℹ️ {purity_verdict}")
 
-            with col3_data:
-                st.markdown(
-                    f"""
-                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
-                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
-                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{ratio_260_230:.2f}</span> :260/230
-                        </span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-            with col4_data:
-                st.markdown(
-                    f"""
-                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
-                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
-                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{concentration:.2f} ng/µL</span> :التركيز
-                        </span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+            # تعليق تحت الصفوف بشكل كامل
+            st.markdown(f"**التعليق:** {purity_reco}")
 
-            col5_data, col6_data = st.columns(2)
-            with col5_data:
-                st.markdown(
-                    f"""
-                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
-                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
-                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{purity_verdict}</span> :النقاء
-                        </span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-            with col6_data:
-                st.markdown(
-                    f"""
-                    <div style="display: flex; justify-content: start; font-size: 1.2em; align-items: center;">
-                        <span style="display: flex; flex-direction: row-reverse; align-items: center;">
-                            <span style="background-color: rgba(0, 0, 0, 0.1); padding: 5px; margin-left: 5px; border-radius: 5px;">{purity_reco}</span> :التعليق
-                        </span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-        # Sample data based on the image
-        x = [230, 260, 280]
-        y = [salt, dna_rna, protein]
+        with col_chart:
+            # بيانات للرسم البياني (المثال مشابه للصورة)
+            x = [230, 260, 280]
+            y = [salt, dna_rna, protein]
+            x = [220] + x + [340]
+            y = [0] + y + [0]
+            f = interp1d(x, y, kind='quadratic')
+            xnew = np.linspace(min(x), max(x), num=100, endpoint=True)
+            ynew = f(xnew)
 
-        # Add data points to connect to zero and extend to 340
-        x = [220] + x + [340]
-        y = [0] + y + [0]
-
-        # Create a spline interpolation
-        f = interp1d(x, y, kind='quadratic')
-
-        # Generate x values for the curve
-        xnew = np.linspace(min(x), max(x), num=100, endpoint=True)
-
-        # Generate y values for the curve
-        ynew = f(xnew)
-
-        # Create the plot
-        fig = go.Figure()
-
-        # Add the scatter trace
-        fig.add_trace(go.Scatter(x=xnew, y=ynew, mode='lines', line=dict(color='red')))
-
-        # Add labels for the wavelengths
-        fig.add_trace(go.Scatter(x=[230, 260, 280], y=[salt, dna_rna, protein], mode='markers+text', text=["Salt", "DNA/RNA", "Protein"], textposition="top center",
-                                 textfont=dict(size=16)))
-
-
-        # Set the axis labels
-        fig.update_layout(
-            xaxis_title="Wavelength (nm)",
-            yaxis_title="10mm Absorbance",
-            xaxis_range=[220, 340],
-            yaxis_range=[0, 7]
-        )
-
-        # Display the plot in Streamlit
-        with col2:
-            st.plotly_chart(fig, key="updated_chart")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=xnew, y=ynew, mode='lines', line=dict(color='red')))
+            fig.add_trace(go.Scatter(
+                x=[230, 260, 280], y=[salt, dna_rna, protein],
+                mode='markers+text',
+                text=["Salt", "DNA/RNA", "Protein"],
+                textposition="top center",
+                textfont=dict(size=16)
+            ))
+            fig.update_layout(
+                xaxis_title="Wavelength (nm)",
+                yaxis_title="10mm Absorbance",
+                xaxis_range=[220, 340],
+                yaxis_range=[0, 7],
+                margin=dict(t=30, b=20, l=50, r=30)
+            )
+            st.plotly_chart(fig, use_container_width=True)
