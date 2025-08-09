@@ -93,7 +93,7 @@ st.sidebar.markdown(
 st.sidebar.header("Config.json")
 st.sidebar.json(protocols, expanded=False)
 
-tab1, tab2 = st.tabs(["عينة واحدة", "ملف CSV كامل"])
+tab1, tab2, tab3 = st.tabs(["عينة واحدة", "ملف CSV كامل", "النظرية"])
 
 # -------------------------
 # TAB 1: Single Sample
@@ -211,14 +211,17 @@ DNA_1,DNA,0.12,0.07,0.06
 RNA_1,RNA,0.08,0.04,
 PROT_1,Protein,0.02,0.03,0.01""", language="csv")
 
-    uploaded_file = st.file_uploader("اختر ملف CSV لتحميله", type=["csv"])
+    uploaded_file = st.file_uploader("اختر ملف CSV أو Excel لتحميله", type=["csv", "xlsx"])
     protocol_choice_batch = st.selectbox("اختر البروتوكول لكل العينات", options=list(protocols.keys()), key="protocol_batch")
     protocol_settings_batch = protocols.get(protocol_choice_batch, {"target_conc": 10, "final_vol": 20})
     default_factor_batch = 50.0
 
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file)
+            if uploaded_file.name.endswith('.csv'):
+                df = pd.read_csv(uploaded_file)
+            else:
+                df = pd.read_excel(uploaded_file)
         except Exception as e:
             st.error("فشل قراءة ملف CSV: " + str(e))
             df = None
@@ -248,8 +251,14 @@ PROT_1,Protein,0.02,0.03,0.01""", language="csv")
             st.table(result_df)
 
             # Download button
-            csv_bytes = result_df.to_csv(index=False).encode("utf-8")
-            st.download_button(label="تحميل النتائج كـ CSV", data=csv_bytes, file_name="nanodrop_results.csv", mime="text/csv")
+            if uploaded_file.name.endswith('.csv'):
+                csv_bytes = result_df.to_csv(index=False).encode("utf-8")
+                st.download_button(label="تحميل النتائج كـ CSV", data=csv_bytes, file_name="nanodrop_results.csv", mime="text/csv")
+            else:
+                excel_bytes = io.BytesIO()
+                result_df.to_excel(excel_bytes, index=False)
+                excel_bytes = excel_bytes.getvalue()
+                st.download_button(label="تحميل النتائج كـ Excel", data=excel_bytes, file_name="nanodrop_results.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     else:
         # Show sample CSV content and a quick button to load sample into app for demo
         st.info("يمكنك تحميل ملف CSV أو استخدام المثال أسفل لتحميل سريع للاختبار.")
@@ -258,7 +267,7 @@ PROT_1,Protein,0.02,0.03,0.01""", language="csv")
 DNA_1,DNA,0.12,0.07,0.06
 RNA_1,RNA,0.08,0.04,
 PROT_1,Protein,0.02,0.03,0.01"""
-            df_sample = pd.read_csv(io.StringIO(sample_csv))
+            df_sample = pd.read_csv(io.StringIO(sample_csv)) # fallback to csv
             detected = map_columns(df_sample.columns)
             result_df = process_dataframe(df_sample, detected, protocol_settings_batch, default_factor_batch)
             st.table(result_df)
@@ -270,3 +279,8 @@ PROT_1,Protein,0.02,0.03,0.01"""
 # -------------------------
 st.markdown("---")
 st.markdown("**ملاحظات:** التطبيق يعمل محليًا. لتعديل بروتوكول افتراضي حرّر ملف `config.json` ثم أعد تشغيل التطبيق.")
+
+from theory_tab import TheoryTab
+
+with tab3:
+    theory_tab = TheoryTab()
