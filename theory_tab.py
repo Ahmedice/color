@@ -29,7 +29,7 @@ class TheoryTab:
             ratio_260_230 = dna_rna / salt if salt != 0 else 0
             concentration = dna_rna * factor
 
-            purity_verdict, purity_reco = assess_purity(ratio_260_280, ratio_260_230, sample_type)
+            purity_verdict, purity_reco = assess_purity(sample_type, ratio_260_280, ratio_260_230)
 
             # تنسيق القيم في صفين، كل صف به 3 أعمدة (نص عربي + القيمة)
             st.markdown("---")
@@ -46,8 +46,10 @@ class TheoryTab:
             row2_col2.markdown(f"**التركيز (ng/µL):** {concentration:.2f}")
             row2_col3.markdown(f"**النقاء:** ℹ️ {purity_verdict}")
 
-            # تعليق تحت الصفوف بشكل كامل
-            st.markdown(f"**التعليق:** {purity_reco}")
+            pass
+
+        # تعليق تحت الصفوف بشكل كامل
+        st.markdown(f"**التعليق:** {purity_reco}")
 
         with col_chart:
             # بيانات للرسم البياني (المثال مشابه للصورة)
@@ -72,7 +74,18 @@ class TheoryTab:
                 xaxis_title="Wavelength (nm)",
                 yaxis_title="10mm Absorbance",
                 xaxis_range=[220, 340],
-                yaxis_range=[0, 7],
+                yaxis_range=[0, 4],
+                yaxis=dict(
+                    showline=True,
+                    linewidth=2,
+                    linecolor='black',
+                    dtick=0.2
+                ),
+                xaxis=dict(
+                    showline=True,
+                    linewidth=2,
+                    linecolor='black'
+                ),
                 margin=dict(t=30, b=20, l=50, r=30)
             )
             st.plotly_chart(fig, use_container_width=True)

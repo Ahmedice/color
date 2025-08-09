@@ -19,7 +19,9 @@ PROT_1,Protein,0.05,0.32,0.03
 PROT_2,Protein,0.02,0.10,0.01
 PROT_3,Protein,0.04,0.03,0.00""", language="csv")
 
+    st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
     uploaded_file = st.file_uploader("اختر ملف CSV أو Excel لتحميله", type=["csv", "xlsx"])
+    st.markdown("</div>", unsafe_allow_html=True)
     protocol_choice_batch = st.selectbox("اختر البروتوكول لكل العينات", options=list(protocols.keys()), key="protocol_batch")
     protocol_settings_batch = protocols.get(protocol_choice_batch, {"target_conc": 10, "final_vol": 20})
     default_factor_batch = 50.0
@@ -68,12 +70,16 @@ PROT_3,Protein,0.04,0.03,0.00""", language="csv")
         # زر تحميل النتائج مع كل الأعمدة الجديدة
         if uploaded_file.name.endswith('.csv'):
             csv_bytes = result_df.to_csv(index=False).encode("utf-8")
-            st.download_button(label="تحميل النتائج كـ CSV", data=csv_bytes, file_name="nanodrop_results.csv", mime="text/csv")
+            st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+            st.download_button(label="تحميل الملف الناتج من جهاز النانو دروب", data=csv_bytes, file_name="nanodrop_results.csv", mime="text/csv")
+            st.markdown("</div>", unsafe_allow_html=True)
         else:
             excel_bytes = io.BytesIO()
             result_df.to_excel(excel_bytes, index=False)
             excel_bytes = excel_bytes.getvalue()
-            st.download_button(label="تحميل النتائج كـ Excel", data=excel_bytes, file_name="nanodrop_results.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+            st.download_button(label="تحميل الملف الناتج من جهاز النانو دروب", data=excel_bytes, file_name="nanodrop_results.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.markdown("</div>", unsafe_allow_html=True)
     else:
         # عرض مثال للتحميل السريع
         st.info("يمكنك تحميل ملف CSV أو استخدام المثال أسفل لتحميل سريع للاختبار.")
