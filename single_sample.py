@@ -35,7 +35,7 @@ def process_single_sample(inputs: Dict[str, Any], protocol_settings: Dict[str, A
     v1, v2, dilution_note = calculate_dilution(concentration, target_conc, final_vol)
 
     # Purity
-    purity_verdict, purity_reco = assess_purity(r260_280, r260_230, sample_type)
+    purity_verdict, purity_reco = assess_purity(sample_type, r260_280, r260_230)
 
     # Prepare notes
     notes = []

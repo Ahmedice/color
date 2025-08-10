@@ -96,31 +96,31 @@ def assess_purity(sample_type, ratio_260_280, ratio_260_230):
     verdict = "حسن"
 
     if sample_type == "DNA":
-        if ratio_260_280 is np.nan or ratio_260_280 < 1.7:
+        if np.isnan(ratio_260_280) or ratio_260_280 < 1.7:
             verdict = "تحذير"
             notes.append("نسبة 260/280 منخفضة (<1.7): قد تشير إلى وجود بقايا بروتين أو ملوثات أخرى.")
         elif ratio_260_280 > 2.0:
             verdict = "تحذير"
             notes.append("نسبة 260/280 مرتفعة (>2.0): قد تشير إلى تلوث بمواد أخرى.")
 
-        if ratio_260_230 is np.nan or ratio_260_230 < 1.8:
+        if np.isnan(ratio_260_230) or ratio_260_230 < 1.8:
             verdict = "تحذير"
             notes.append("نسبة 260/230 منخفضة (<1.8): قد تشير إلى ملوثات عضوية أو أوساخ.")
 
     elif sample_type == "RNA":
-        if ratio_260_280 is np.nan or ratio_260_280 < 1.8:
+        if np.isnan(ratio_260_280) or ratio_260_280 < 1.8:
             verdict = "تحذير"
             notes.append("نسبة 260/280 منخفضة (<1.8): قد تشير إلى تحلل الحمض النووي أو تلوث.")
         elif ratio_260_280 > 2.2:
             verdict = "تحذير"
             notes.append("نسبة 260/280 مرتفعة (>2.2): قد تشير إلى تلوث.")
         
-        if ratio_260_230 is np.nan or ratio_260_230 < 1.8:
+        if np.isnan(ratio_260_230) or ratio_260_230 < 1.8:
             verdict = "تحذير"
             notes.append("نسبة 260/230 منخفضة (<1.8): قد تشير إلى ملوثات.")
 
     elif sample_type == "Protein":
-        if ratio_260_280 is np.nan or ratio_260_280 < 0.5:
+        if np.isnan(ratio_260_280) or ratio_260_280 < 0.5:
             verdict = "تحذير"
             notes.append("نسبة 260/280 منخفضة (<0.5): قد تدل على نقاوة منخفضة للبروتين.")
         elif ratio_260_280 > 0.8:
@@ -130,9 +130,9 @@ def assess_purity(sample_type, ratio_260_280, ratio_260_230):
         # 260/230 ليس مقياسًا دقيقًا للبروتين عادة، يمكن تخطيه
 
     # تحقق إذا كانت النسب مفقودة وأضف ملاحظات
-    if ratio_260_280 is np.nan:
+    if np.isnan(ratio_260_280):
         notes.append("نسبة 260/280 غير متوفرة أو غير صالحة.")
-    if ratio_260_230 is np.nan:
+    if np.isnan(ratio_260_230):
         notes.append("نسبة 260/230 غير متوفرة أو غير صالحة.")
 
     purity_notes = "؛ ".join(notes)

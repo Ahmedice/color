@@ -145,9 +145,6 @@ with tab1:
         reset_button = st.form_submit_button("إعادة تعيين")
         submitted = st.form_submit_button("حساب")
 
-    if submitted:
-        pass # do nothing
-    
     if reset_button:
         protocol = protocols[st.session_state.protocol_choice]
         factor_input = str(50)
