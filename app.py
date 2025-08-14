@@ -136,9 +136,9 @@ with tab1:
         with col1_dilution:
             pass
         with col2_dilution:
-            final_vol_input = st.text_input("Final Vol (µl)", value=str(st.session_state.final_vol), key="final_vol_input")
+            final_vol_input = st.text_input("Final Vol (µl)(the desired volume )", value=str(st.session_state.final_vol), key="final_vol_input")
         with col3_dilution:
-            target_conc_input = st.text_input("Target Conc", value=str(st.session_state.target_conc), key="target_conc_input")
+            target_conc_input = st.text_input("Target Conc (ng/µl) (of the final volume)", value=str(st.session_state.target_conc), key="target_conc_input")
         with col1_dilution:
             factor_input = st.text_input("Factor", value=str(st.session_state.factor), help="A260 لحساب التركيز.", key="factor_input")
 
